@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smartooth AI - MongoDB</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4fdf4;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+
+    h1 {
+      text-align: center;
+      color: #3a6e46;
+      font-size: 2.5em;
+      margin-top: 40px;
+    }
+
+    h3 {
+      color: #4c8c4a;
+      margin-bottom: 10px;
+    }
+
+    .container {
+      width: 80%;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #ffffff;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      border-radius: 10px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      font-size: 1.1em;
+      color: #3a6e46;
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px;
+      font-size: 1em;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      background-color: #f0f8f0;
+      transition: 0.3s ease-in-out;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #4c8c4a;
+      box-shadow: 0 0 10px rgba(76, 140, 74, 0.2);
+    }
+
+    button {
+      background-color: #4c8c4a;
+      color: #fff;
+      border: none;
+      padding: 12px 20px;
+      font-size: 1.1em;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.3s ease-in-out;
+    }
+
+    button:hover {
+      background-color: #3a6e46;
+    }
+
+    #pacientesList {
+      margin-top: 20px;
+      background-color: #f9f9f9;
+      padding: 15px;
+      border-radius: 8px;
+    }
+
+    .paciente-item {
+      border-bottom: 1px solid #ccc;
+      padding: 10px;
+    }
+
+    .paciente-item:last-child {
+      border-bottom: none;
+    }
+
+    .paciente-item p {
+      margin: 5px 0;
+    }
+
+    .actions {
+      margin-top: 10px;
+    }
+
+    .actions button {
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Smartooth AI - Cadastro de Pacientes</h1>
+
+    <h3>Cadastrar / Editar Paciente</h3>
+    <form id="paciente-form">
+      <input type="hidden" id="pacienteId" />
+      <div class="form-group">
+        <label for="nome">Nome Completo:</label>
+        <input type="text" id="nome" required />
+      </div>
+      <div class="form-group">
+        <label for="cpf">CPF:</label>
+        <input type="text" id="cpf" required />
+      </div>
+      <div class="form-group">
+        <label for="data_nascimento">Data de Nascimento:</label>
+        <input type="date" id="data_nascimento" required />
+      </div>
+      <div class="form-group">
+        <label for="email">Email:</label>
+        <input type="email" id="email" required />
+      </div>
+      <div class="form-group">
+        <label for="telefone">Telefone:</label>
+        <input type="text" id="telefone" required />
+      </div>
+      <div class="form-group">
+        <label for="cep">CEP:</label>
+        <input type="text" id="cep" required onblur="consultarCep()" />
+      </div>
+      <div class="form-group">
+        <label for="rua">Rua:</label>
+        <input type="text" id="rua" required />
+      </div>
+      <div class="form-group">
+        <label for="numero">Número:</label>
+        <input type="text" id="numero" required />
+      </div>
+      <div class="form-group">
+        <label for="bairro">Bairro:</label>
+        <input type="text" id="bairro" required />
+      </div>
+      <div class="form-group">
+        <label for="cidade">Cidade:</label>
+        <input type="text" id="cidade" required />
+      </div>
+      <div class="form-group">
+        <label for="estado">Estado:</label>
+        <input type="text" id="estado" required />
+      </div>
+      <div class="form-group">
+        <button type="submit">Salvar Paciente</button>
+      </div>
+    </form>
+
+    <h3>Pacientes Cadastrados</h3>
+    <div id="pacientesList"></div>
+  </div>
+
+  <script>
+    async function consultarCep() {
+      const cep = document.getElementById('cep').value.replace(/\D/g, '');
+      if (cep.length !== 8) return alert('CEP inválido.');
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+        const data = await res.json();
+        if (data.erro) return alert('CEP não encontrado.');
+        document.getElementById('rua').value = data.logradouro;
+        document.getElementById('bairro').value = data.bairro;
+        document.getElementById('cidade').value = data.localidade;
+        document.getElementById('estado').value = data.uf;
+      } catch (err) {
+        console.error(err);
+        alert('Erro ao buscar o CEP.');
+      }
+    }
+
+    async function carregarPacientes() {
+      const lista = document.getElementById('pacientesList');
+      lista.innerHTML = '';
+      try {
+        const res = await fetch('/pacientes');
+        const pacientes = await res.json();
+        pacientes.forEach(p => {
+          const item = document.createElement('div');
+          item.className = 'paciente-item';
+          item.innerHTML = `
+            <p><strong>Nome:</strong> ${p.nome}</p>
+            <p><strong>CPF:</strong> ${p.cpf}</p>
+            <p><strong>Email:</strong> ${p.email}</p>
+            <div class="actions">
+              <button onclick="editarPaciente('${p._id}')">Editar</button>
+              <button onclick="deletarPaciente('${p._id}')">Excluir</button>
+            </div>
+          `;
+          lista.appendChild(item);
+        });
+      } catch (err) {
+        console.error(err);
+        alert('Erro ao carregar pacientes.');
+      }
+    }
+
+    async function editarPaciente(id) {
+      try {
+        const res = await fetch(`/pacientes/${id}`);
+        const p = await res.json();
+        document.getElementById('pacienteId').value = p._id;
+        document.getElementById('nome').value = p.nome;
+        document.getElementById('cpf').value = p.cpf;
+        document.getElementById('data_nascimento').value = p.data_nascimento;
+        document.getElementById('email').value = p.email;
+        document.getElementById('telefone').value = p.telefone;
+        document.getElementById('rua').value = p.endereco.rua;
+        document.getElementById('numero').value = p.endereco.numero;
+        document.getElementById('bairro').value = p.endereco.bairro;
+        document.getElementById('cidade').value = p.endereco.cidade;
+        document.getElementById('estado').value = p.endereco.estado;
+      } catch (err) {
+        console.error(err);
+        alert('Erro ao carregar paciente para edição.');
+      }
+    }
+
+    async function deletarPaciente(id) {
+      if (!confirm('Deseja realmente excluir este paciente?')) return;
+      try {
+        const res = await fetch(`/pacientes/${id}`, { method: 'DELETE' });
+        if (res.ok) carregarPacientes();
+        else alert('Erro ao excluir paciente.');
+      } catch (err) {
+        console.error(err);
+        alert('Erro ao excluir paciente.');
+      }
+    }
+
+    document.getElementById('paciente-form').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const id = document.getElementById('pacienteId').value;
+      const paciente = {
+        nome: document.getElementById('nome').value,
+        cpf: document.getElementById('cpf').value,
+        data_nascimento: document.getElementById('data_nascimento').value,
+        email: document.getElementById('email').value,
+        telefone: document.getElementById('telefone').value,
+        endereco: {
+          rua: document.getElementById('rua').value,
+          numero: document.getElementById('numero').value,
+          bairro: document.getElementById('bairro').value,
+          cidade: document.getElementById('cidade').value,
+          estado: document.getElementById('estado').value
+        }
+      };
+
+      try {
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? `/pacientes/${id}` : '/pacientes';
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(paciente)
+        });
+
+        if (res.ok) {
+          alert(id ? 'Paciente atualizado!' : 'Paciente cadastrado!');
+          document.getElementById('paciente-form').reset();
+          document.getElementById('pacienteId').value = '';
+          carregarPacientes();
+        } else {
+          const erro = await res.json();
+          alert('Erro: ' + erro.message);
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Erro ao salvar paciente.');
+      }
+    });
+
+    window.onload = carregarPacientes;
+  </script>
+</body>
+</html>
